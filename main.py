@@ -74,10 +74,31 @@ class ScheduleP(search.Problem):
         raise NotImplementedError
 
     def goal_test(self, state):
+
         """Return True if the state is a goal. The default method compares the
         state to self.goal or checks for state in self.goal if it is a
         list, as specified in the constructor. Override this method if
         checking against a single self.goal is not enough."""
+
+        target_list = []
+        goal = False;
+
+        # If in all shifts the number of nurses is equal to the number of nurses 
+        # required then all shifts have been successfully atributed
+        for shift in state.shifts:
+            if shift.NrNurses == shift.nrNursesReq:
+                target_list.append(True)
+            else:
+                target_list.append(False)
+
+        for target in target_list:
+            if target == True:
+                goal = True;
+            else:
+                goal = False;
+        return goal
+
+
 
     def path_cost(self, c, state1, action, state2):
         """Return the cost of a solution path that arrives at state2 from
