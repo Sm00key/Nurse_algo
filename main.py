@@ -1,5 +1,10 @@
-import search.py
+import search
 
+class state_t:
+    def __init__(self, nurses, shifts):
+        self.nurses = nurses
+        self.shifts = shifts
+        self.cost = 0
 
 class Shift:
     def __init__(self, weekDay, nrNursesReq, time):
@@ -19,17 +24,20 @@ class Shift:
             print("Added nurse" + Nurse.ID + "to" + self.time + "Shift in day" + self.weekDay.day + "\n")
             return 1
 
+
 class Nurse:
     def __init__(self, NurseID):
         self.ID = NurseID
         self.shiftList = []
+
     def addshift(self, Shift):
         if Shift not in self.shiftList:
             self.shiftList.append(Shift)
             return 1
         else:
-            print("Nurse already had that shift")
+            print("Nurse already has that shift")
             return -1
+
 
 class ScheduleP(search.Problem):
     """The abstract class for a formal problem. You should subclass
@@ -37,18 +45,27 @@ class ScheduleP(search.Problem):
     __init__, goal_test, and path_cost. Then you will create instances
     of your subclass and solve them with the various search functions."""
 
-    def __init__(self, Nurses, Shifts):
+    def __init__(self, initial):
         """The constructor specifies the initial state, and possibly a goal
         state, if there is a unique goal. Your subclass's constructor can add
         other arguments."""
-        self.Shifts = Shifts
-        self.Nurses = Nurses
+        super().__init__(initial)
+        self.initial = initial
+
     def actions(self, state):
-        """Return the actions that can be executed in the given
-        state. The result would typically be a list, but if there are
-        many actions, consider yielding them one at a time in an
-        iterator, rather than building them all at once."""
-        raise NotImplementedError
+        actions = []
+        for shift in state.shifts:
+            if shift.NrNurses < shift.nrNursesReq:
+                for nurse in state.nurses:
+                    if Nurse.ID not in shift.dictOfNurses:
+                        actions.append((nurse, shift))
+
+
+
+
+
+
+
 
     def result(self, state, action):
         """Return the state that results from executing the given
@@ -61,10 +78,6 @@ class ScheduleP(search.Problem):
         state to self.goal or checks for state in self.goal if it is a
         list, as specified in the constructor. Override this method if
         checking against a single self.goal is not enough."""
-        if isinstance(self.goal, list):
-            return is_in(state, self.goal)
-        else:
-            return state == self.goal
 
     def path_cost(self, c, state1, action, state2):
         """Return the cost of a solution path that arrives at state2 from
@@ -79,12 +92,13 @@ class ScheduleP(search.Problem):
         and related algorithms try to maximize this value."""
         raise NotImplementedError
 
+
 def BuildClass():
     nList = []
     sList = []
     for i in range(0, 15):
         nList.append(Nurse(i))
-    for i in range(1,8):
+    for i in range(1, 8):
         if i == 1 or 2 or 4 or 5:
             sList.append(Shift(i, 9, "Morning"))
             sList.append(Shift(i, 6, "Afternoon"))
@@ -93,4 +107,8 @@ def BuildClass():
             sList.append(Shift(i, 6, "Morning"))
             sList.append(Shift(i, 6, "Afternoon"))
             sList.append(Shift(i, 5, "Night"))
+    return nList, sList
 
+
+nlist, slist = BuildClass()
+Pb = ScheduleP(state_t(nlist, slist))  # INITIAL STATE
