@@ -106,6 +106,24 @@ class ScheduleP(search.Problem):
         is such that the path doesn't matter, this function will only look at
         state2.  If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
+
+        flag = False;
+
+        for nurse in state2.nurses:
+            for i in range(len(nurse.shiftList)):
+                for j in range(i + 1, len(nurse.shiftList)):
+                    if nurse.shiftList[i].weekDay == nurse.shiftList[j].weekDay:
+                        if (nurse.shiftList[i].time == 'Morning' and nurse.shiftList[j].time == 'Afternoon') or \
+                        (nurse.shiftList[i].time == 'Afternoon' and nurse.shiftList[j].time == 'Night'):
+                        flag = True
+
+        if flag == True:
+             return c = c + 2
+        else:
+            return c = c + 0
+
+
+
         return c + 1
 
     def value(self, state):
