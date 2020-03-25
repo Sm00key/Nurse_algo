@@ -61,27 +61,28 @@ class ScheduleP(search.Problem):
         other arguments."""
         self.initial = state_t(None, slist)
         super().__init__(self.initial)
-        self.shifts = nlist
-        self.nurses = slist
+        self.shifts = slist
+        self.nurses = nlist
 
     def actions(self, state):
         actions = []
-        for shift in state.shifts:
+        for shift in state.shifts.values():
             if shift.NrNurses < shift.nrNursesReq:
                 for nurse in self.nurses:
                     if nurse.ID not in shift.dictOfNurses:
-                        if shift.prevshift is None:
+                        if (shift.prevshift is None) or (len(shift.prevshift.dictOfNurses) == 0):
                             actions.append((nurse, shift))
-                        elif shift.prevshift.dictOfNurses[nurse.ID] is not shift.prevshift.prevshift.dictOfNurses[
-                            nurse.ID]:
+                        elif shift.prevshift.dictOfNurses[nurse.ID].ID != shift.prevshift.prevshift.dictOfNurses[nurse.ID].ID:
                             actions.append((nurse, shift))
+        return actions
 
     def result(self, state, action):
         """Return the state that results from executing the given
         action in the given state. The action must be one of
         self.actions(state)."""
         new_state = copy.deepcopy(state)
-        new_state.shifts[action[1].nr].addNurse(action[1])
+        new_state.shifts[action[1].nr].addNurse(action[0])
+        return new_state
 
     def goal_test(self, state):
 
@@ -92,7 +93,7 @@ class ScheduleP(search.Problem):
         # If in all shifts the number of nurses is equal to the number of nurses 
         # required then all shifts have been successfully attributed
         goal = True
-        for shift in state.shifts:
+        for shift in state.shifts.values():
             if shift.NrNurses != shift.nrNursesReq:
                 goal = False
                 break
@@ -105,7 +106,6 @@ class ScheduleP(search.Problem):
         state2.  If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
         cost = 0
-        flag = False
 
         if action[0].ID in state2.shifts[action[1]].prevshift.dictOfNurse.keys():
             cost = 1
@@ -117,26 +117,39 @@ class ScheduleP(search.Problem):
         and related algorithms try to maximize this value."""
         raise NotImplementedError
 
+    def h(self, n):
+        return 0
+
 
 def BuildClass():
     nList = []
     sList = []
     s1, s2, s3 = None, None, None
+    id = 0
     for i in range(0, 15):
         nList.append(Nurse(i))
-    for i in range(1, 8):
+    for i in list(range(1, 8)):
         if i == 1:
-            s1 = Shift(i + 1, 9, "Morning", None)
-            s2 = Shift(i + 2, 6, "Afternoon", s1)
-            s3 = Shift(i + 3, 5, "Night", s2)
-        if i == 2 or 4 or 5:
-            s1 = Shift(i + 1, 9, "Morning", s3)
-            s2 = Shift(i + 2, 6, "Afternoon", s1)
-            s3 = Shift(i + 3, 5, "Night", s2)
-        if i == 3 or 6 or 7:
-            s1 = Shift(i + 1, 6, "Morning", s3)
-            s2 = Shift(i + 2, 6, "Afternoon", s1)
-            s2 = Shift(i + 3, 5, "Night", s2)
+            s1 = Shift(id, 9, "Morning", None)
+            id += 1
+            s2 = Shift(id, 6, "Afternoon", s1)
+            id += 1
+            s3 = Shift(id, 5, "Night", s2)
+            id += 1
+        if i == (2 or 4 or 5):
+            s1 = Shift(id, 9, "Morning", s3)
+            id += 1
+            s2 = Shift(id, 6, "Afternoon", s1)
+            id += 1
+            s3 = Shift(id, 5, "Night", s2)
+            id += 1
+        if i == (3 or 6 or 7):
+            s1 = Shift(id, 6, "Morning", s3)
+            id += 1
+            s2 = Shift(id, 6, "Afternoon", s1)
+            id += 1
+            s2 = Shift(id, 5, "Night", s2)
+            id += 1
         sList.append(s1)
         sList.append(s2)
         sList.append(s3)
@@ -146,4 +159,4 @@ def BuildClass():
 nlist, slist = BuildClass()
 Pb = ScheduleP(nlist, slist)  # INITIAL STATE
 
-node = search.astar_search(Pb, None)
+node = search.astar_search(Pb)
