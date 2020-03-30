@@ -11,6 +11,9 @@ class state_t:
         for shift in shifts:
             self.shifts[shift.nr] = shift
 
+    def __lt__(self, node_t):
+        return self.cost < node_t.cost
+
 
 class Shift:
     def __init__(self, number, nrNursesReq, time, pshift):
@@ -72,8 +75,13 @@ class ScheduleP(search.Problem):
                     if nurse.ID not in shift.dictOfNurses:
                         if (shift.prevshift is None) or (len(shift.prevshift.dictOfNurses) == 0):
                             actions.append((nurse, shift))
-                        elif shift.prevshift.dictOfNurses[nurse.ID].ID != shift.prevshift.prevshift.dictOfNurses[nurse.ID].ID:
+                        elif nurse.ID not in shift.prevshift.dictOfNurses: #POTENTIAL BUG
                             actions.append((nurse, shift))
+                        elif shift.prevshift.prevshift is None:
+                            actions.append((nurse, shift))
+                        elif nurse.ID not in shift.prevshift.prevshift.dictOfNurses:
+                            actions.append((nurse, shift))
+                break
         return actions
 
     def result(self, state, action):
@@ -82,6 +90,7 @@ class ScheduleP(search.Problem):
         self.actions(state)."""
         new_state = copy.deepcopy(state)
         new_state.shifts[action[1].nr].addNurse(action[0])
+        new_state.cost += self.path_cost(0, state, action, new_state)
         return new_state
 
     def goal_test(self, state):
@@ -105,12 +114,13 @@ class ScheduleP(search.Problem):
         is such that the path doesn't matter, this function will only look at
         state2.  If the path does matter, it will consider c and maybe state1
         and action. The default method costs 1 for every step in the path."""
-        cost = 0
-
-        if action[0].ID in state2.shifts[action[1]].prevshift.dictOfNurse.keys():
+        cost: int = 0
+        if state2.shifts[action[1].nr].prevshift is None:
+            return 0
+        if action[0].ID in state2.shifts[action[1].nr].prevshift.dictOfNurses.keys():
             cost = 1
 
-        return c + cost
+        return cost
 
     def value(self, state):
         """For optimization problems, each state has a value. Hill-climbing
@@ -136,19 +146,19 @@ def BuildClass():
             id += 1
             s3 = Shift(id, 5, "Night", s2)
             id += 1
-        if i == (2 or 4 or 5):
+        if i == 2 or i == 4 or i == 5:
             s1 = Shift(id, 9, "Morning", s3)
             id += 1
             s2 = Shift(id, 6, "Afternoon", s1)
             id += 1
             s3 = Shift(id, 5, "Night", s2)
             id += 1
-        if i == (3 or 6 or 7):
+        if i == 3 or i == 6 or i == 7:
             s1 = Shift(id, 6, "Morning", s3)
             id += 1
             s2 = Shift(id, 6, "Afternoon", s1)
             id += 1
-            s2 = Shift(id, 5, "Night", s2)
+            s3 = Shift(id, 5, "Night", s2)
             id += 1
         sList.append(s1)
         sList.append(s2)
@@ -156,7 +166,13 @@ def BuildClass():
     return nList, sList
 
 
-nlist, slist = BuildClass()
-Pb = ScheduleP(nlist, slist)  # INITIAL STATE
+nlist_t, slist_t = BuildClass()
+Pb = ScheduleP(nlist_t, slist_t)  # INITIAL STATE
 
 node = search.astar_search(Pb)
+for shift in node.state.shifts.values():
+    print("Shift nr: " + str(shift.nr) + "  with the following nurses:")
+    for nurse in shift.dictOfNurses.values():
+        print(nurse.ID, end="\t")
+    print()
+
